@@ -1,5 +1,6 @@
 # Java React Sample App 
 
+This sample app showcases Descope authentication built using React for frontend and Java Spring for backend. The frontend incldues a home, login, and dashboard screen, with the dashboard including a call to the backend to get a "secret message" that is only shared when a valid session token is passed in. The frontend authentication is implemented using Descope's [React SDK](https://github.com/descope/react-sdk) while the backend is done using Descope's [Java SDK](https://github.com/descope/descope-java).
 
 ## Setup & Running
 
