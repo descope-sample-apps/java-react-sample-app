@@ -15,7 +15,7 @@ cd server
 
 2. In your `application.properties` file, add your Descope project ID:
 ```
-descope.project.id="YOUR_DESCOPE_PROJECT_ID"
+descope.project.id=<YOUR_DESCOPE_PROJECT_ID>
 ```
 
 3. To run the application, run the following command in a terminal window (in the complete) directory:
