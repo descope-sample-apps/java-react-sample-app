@@ -12,13 +12,13 @@ const App = () => {
   
   useEffect(() => {
     getSecretMessage();
-  }, []);
+  }, [isAuthenticated]);
 
   const getSecretMessage = async () => {
     const sessionToken = getSessionToken();
 
     // example fetch call with authentication header
-    fetch('http://localhost:8080/getSecretMessage', {
+    fetch('http://localhost:8080/get_secret_message', {
       headers: {
         Accept: 'application/json',
         Authorization: 'Bearer ' + sessionToken,
@@ -26,40 +26,32 @@ const App = () => {
     })
     .then(response => response.json())
     .then(data => {
-      console.log("Data: ", data)
       setSecretMessage(data.message)
     })
     .catch(error => {
-      console.log(error);
-      setSecretMessage('Could not get secret message');
+      console.log(error)
+      setSecretMessage("Error fetching message-your server may not be running.")
     });
   }
-
-  
 
   const handleLogout = useCallback(() => {
     logout()
   }, [logout])
 
+  if (isSessionLoading || isUserLoading) {
+    return <p>Loading...</p>;
+  }
+
   return <>
     {!isAuthenticated &&
-      (
-        <Descope
-          flowId="sign-up-or-in"
-          onSuccess={(e) => console.log(e.detail.user)}
-          onError={(e) => console.log('Could not log in!')}
-        />
-      )
+      (<Descope
+        flowId="sign-up-or-in"
+        onSuccess={(e) => console.log(e.detail.user)}
+        onError={(e) => console.log('Could not log in!')}
+      />)
     }
 
-    {
-      (isSessionLoading || isUserLoading) && <p>Loading...</p>
-    }
-    <div>
-      <p>Secret message: {secretMessage}</p>
-    </div>
-
-    {!isUserLoading && isAuthenticated &&
+    {isAuthenticated &&
       (
         <>
           <p>Hello {user.name}</p>
@@ -68,6 +60,10 @@ const App = () => {
         </>
       )
     }
+    <div>
+      <p><b>Secret message:</b> {secretMessage}</p>
+      <p>We'll see the secret message once the user authenticates and a valid session token is passed to the backend.</p>
+    </div>
   </>;
 }
 

@@ -13,11 +13,10 @@ Authentication and session validation are implemented using Descope's [React SDK
 cd server
 ```
 
-2. Create a .env folder and add environment variables:
+2. In your `application.properties` file, add your Descope project ID:
 ```
-PROJECT_ID="YOUR_DESCOPE_PROJECT_ID"
+descope.project.id="YOUR_DESCOPE_PROJECT_ID"
 ```
-
 
 3. To run the application, run the following command in a terminal window (in the complete) directory:
 
@@ -46,7 +45,7 @@ npm i
 
 3. Create a .env folder and add environment variables:
 ```
-NEXT_PUBLIC_DESCOPE_PROJECT_ID="YOUR_DESCOPE_PROJECT_ID"
+REACT_APP_DESCOPE_PROJECT_ID="YOUR_DESCOPE_PROJECT_ID"
 ```
 
 4. Start the application
