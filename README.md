@@ -53,6 +53,10 @@ REACT_APP_DESCOPE_PROJECT_ID="YOUR_DESCOPE_PROJECT_ID"
 npm start
 ```
 
+>Note: If you're not running the client at http://localhost:3000 you may need to change the server's CrossOrigin domain to wherever you're hosting it (in JavaSampleAppApplication.java).
+```
+@CrossOrigin(origins = "http://localhost:3000")
+```
 
 ## License
 
