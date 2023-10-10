@@ -43,7 +43,7 @@ cd client
 npm i
 ```
 
-3. Create a .env folder and add environment variables:
+3. Create a `.env` folder and add environment variables:
 ```
 REACT_APP_DESCOPE_PROJECT_ID="YOUR_DESCOPE_PROJECT_ID"
 ```
