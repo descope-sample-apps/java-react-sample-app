@@ -6,6 +6,8 @@ import com.descope.model.auth.AuthenticationInfo;
 import com.descope.model.jwt.Token;
 import com.descope.model.magiclink.LoginOptions;
 import com.descope.sdk.auth.*;
+
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
@@ -22,16 +24,22 @@ import org.springframework.web.bind.annotation.RestController;
 @CrossOrigin(origins = "http://localhost:3000")
 public class JavaSampleAppApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(JavaSampleAppApplication.class, args);
-	}
 
 	@Value("${descope.project.id}")
 	private String descopeProjectId;
 
+	private DescopeClient descopeClient;
+
+	public static void main(String[] args) {
+		SpringApplication.run(JavaSampleAppApplication.class, args);
+	}
+
+ 	@PostConstruct
+    public void init() {
+        descopeClient = new DescopeClient(Config.builder().projectId(descopeProjectId).build());
+    }
+
 	public void validateSession(String sessionToken) throws DescopeException {
-		DescopeClient descopeClient = new DescopeClient(
-			Config.builder().projectId(descopeProjectId).build());
 		AuthenticationService as = descopeClient.getAuthenticationServices().getAuthService();
 		Token t = as.validateSessionWithToken(sessionToken);
 	}
@@ -74,14 +82,14 @@ public class JavaSampleAppApplication {
 			@RequestParam(value = "prompt", required = false) String prompt,
 			@RequestParam(value = "loginOptions", required = false) LoginOptions loginOptions) {
 		try {
-			String url = startSSO(tenantId, redirectUrl, prompt, loginOptions);
+			String url = descopeClient.getAuthenticationServices().getSsoServiceProvider().start(tenantId, redirectUrl, prompt,
+			loginOptions);
 			String jsonResponse = "{\"url\": \"" + url + "\"}";
 
 			return ResponseEntity.ok()
 					.contentType(org.springframework.http.MediaType.APPLICATION_JSON)
 					.body(jsonResponse);
 		} catch (DescopeException e) {
-			// Handle exceptions, such as DescopeException
 			return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
@@ -90,30 +98,11 @@ public class JavaSampleAppApplication {
 	public ResponseEntity<String> startSSOEndpoint(
 			@RequestParam("code") String code) {
 		try {
-			AuthenticationInfo authInfo = exchangeToken(code);
+			AuthenticationInfo authInfo = descopeClient.getAuthenticationServices().getSsoServiceProvider().exchangeToken(code);
 			String email = authInfo.getUser().getEmail();
 			return ResponseEntity.ok("Token exchange successful for user " + email);
 		} catch (DescopeException e) {
-			// Handle exceptions, such as DescopeException
 			return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
-	}
-
-	public String startSSO(String tenantId, String redirectUrl, String prompt, LoginOptions loginOptions)
-			throws DescopeException {
-				
-		DescopeClient descopeClient = new DescopeClient(
-			Config.builder().projectId(descopeProjectId).build());
-		String url = descopeClient.getAuthenticationServices().getSsoServiceProvider().start(tenantId, redirectUrl, prompt,
-				loginOptions);
-
-		return url;
-	}
-
-	public AuthenticationInfo exchangeToken(String code) throws DescopeException {
-		DescopeClient descopeClient = new DescopeClient(
-			Config.builder().projectId(descopeProjectId).build());
-		AuthenticationInfo authInfo = descopeClient.getAuthenticationServices().getSsoServiceProvider().exchangeToken(code);
-		return authInfo;
 	}
 }
