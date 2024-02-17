@@ -24,7 +24,6 @@ const SSOSignIn = () => {
             }).catch((error) => {
                 console.log(error)
                 alert("Error starting SSO sign in.")
-                // Could be that your tenant ID is invalid
             });
         }
     }
