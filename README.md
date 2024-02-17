@@ -66,7 +66,7 @@ npm start
 
 ## Tenant-based OIDC SSO Setup
 
-You will need to configure a tenant in your Descope console with OIDC. Then, you can use the associated tenant ID to start SSO and then exchange the returned code for 
+You will need to configure a tenant in your Descope console with OIDC. Then, you can use the associated tenant ID to start SSO, redirect to the IdP authentication portal, and then exchange the returned code for 
 authenticated user info. We'll include the steps to set up in the UI here, but this can also be done via API or SDK.
 
 1. Create a tenant [here](https://app.descope.com/tenants)
