@@ -14,11 +14,10 @@ Authentication and session validation are implemented using Descope's [React SDK
 cd server
 ```
 
-2. In your `application.properties` file, add your Descope project ID and management key:
+2. In your `application.properties` file, add your Descope project ID:
 
 ```
 descope.project.id=<YOUR_DESCOPE_PROJECT_ID>
-descope.management.key=<YOUR_DESCOPE_COMPANY_MANAGEMENT_KEY>
 ```
 
 3. To run the application, run the following command in a terminal window (in the complete) directory:
@@ -64,6 +63,11 @@ npm start
 ```
 @CrossOrigin(origins = "http://localhost:3000")
 ```
+
+## Tenant-based OIDC SSO Setup
+
+You will need to configure a tenant in your Descope console with OIDC. Then, you can use the associated tenant ID to start SSO and then exchange the returned code for 
+authenticated user info.
 
 ## License
 
