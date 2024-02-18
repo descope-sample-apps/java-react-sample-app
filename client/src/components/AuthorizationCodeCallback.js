@@ -25,7 +25,7 @@ const AuthorizationCodeCallback = () => {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             },
-            body: JSON.stringify({ code }), // Send code in the body
+            body: JSON.stringify({ code }),
         })
         .then(async response => {
             const data = await response.json();
