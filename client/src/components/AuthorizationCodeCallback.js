@@ -12,6 +12,9 @@ const AuthorizationCodeCallback = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('code');
 
+      // Ref added to prevent calling of endpoint twice,
+      // due to React Strict Mode behavior in development
+      // for debugging
       if (hasFetchedRef.current) {
         return;
       }
