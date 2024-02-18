@@ -86,8 +86,8 @@ Be sure to have `https://api.descope.com/v1/oauth/callback` in the allowed redir
 
 ![Screenshot 2024-02-17 at 10 46 38 AM](https://github.com/descope-sample-apps/java-react-sample-app/assets/46854522/0159a703-20a3-4a2e-b25c-120c043f66a2)
 
-You should see a message saying token exchange was successful along with the signed in user.
-![Screenshot 2024-02-17 at 10 44 14 AM](https://github.com/descope-sample-apps/java-react-sample-app/assets/46854522/7ca5f180-67dd-48a0-8921-554cfc303e89)
+You should see the signed in user's email, userId, session, and refresh token.
+![Screenshot 2024-02-18 at 10 22 19 AM](https://github.com/descope-sample-apps/java-react-sample-app/assets/46854522/3feb9585-d508-4d8b-ac13-e1cd54307c3f)
 
 
 
