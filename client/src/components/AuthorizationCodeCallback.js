@@ -14,7 +14,7 @@ const AuthorizationCodeCallback = () => {
 
       // Ref added to prevent calling of endpoint twice,
       // due to React Strict Mode behavior in development
-      // for debugging
+      // for debugging purposes
       if (hasFetchedRef.current) {
         return;
       }
