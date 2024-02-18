@@ -9,6 +9,10 @@ import com.descope.sdk.auth.*;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -16,6 +20,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -94,14 +100,25 @@ public class JavaSampleAppApplication {
 		}
 	}
 
-	@GetMapping("/authorization-code/callback")
-	public ResponseEntity<String> startSSOEndpoint(
-			@RequestParam("code") String code) {
+	@PostMapping("/authorization-code/callback")
+	public ResponseEntity<?> handleAuthorizationCode(@RequestBody Map<String, String> payload) {
 		try {
+			String code = payload.get("code");
 			AuthenticationInfo authInfo = descopeClient.getAuthenticationServices().getSsoServiceProvider().exchangeToken(code);
 			String email = authInfo.getUser().getEmail();
-			return ResponseEntity.ok("Token exchange successful for user " + email);
+			String userId = authInfo.getUser().getUserId();
+			String token = authInfo.getToken().toString();
+			String refreshToken = authInfo.getRefreshToken().toString();
+			
+			Map<String, String> response = new HashMap<>();
+			response.put("email", email);
+			response.put("userId", userId);
+			response.put("token", token);
+			response.put("refreshToken", refreshToken);
+			System.out.println("Response: " + response.toString());
+			return ResponseEntity.ok(response);
 		} catch (DescopeException e) {
+			System.out.println("Error: " + e.getMessage());
 			return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}

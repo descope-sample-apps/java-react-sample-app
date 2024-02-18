@@ -10,12 +10,11 @@ const SSOSignIn = () => {
         } else {
             const queryParams = new URLSearchParams({
                 tenantId,
-                redirectUrl: 'http://localhost:8080/authorization-code/callback',
+                redirectUrl: 'http://localhost:3000/authorization-code/callback',
             }).toString();
             fetch(`http://localhost:8080/start_sso?${queryParams}`, {
                 headers: {
                     Accept: 'application/json',
-                    'Content-Type': 'application/json',
                 }
             }).then(async (response) => {
                 const url = (await response.json()).url;

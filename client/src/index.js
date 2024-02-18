@@ -1,12 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
 import { AuthProvider } from '@descope/react-sdk';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./pages/Layout";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import SignIn from "./pages/SignIn";
+import AuthorizationCodeCallback from './components/AuthorizationCodeCallback';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -18,6 +18,7 @@ root.render(
                 <Routes>
                     <Route path="/" element={<Layout />}>
                     <Route index element={<Home />} />
+                    <Route path="/authorization-code/callback" element={<AuthorizationCodeCallback />} />
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/signin" element={<SignIn />} />
                     </Route>
