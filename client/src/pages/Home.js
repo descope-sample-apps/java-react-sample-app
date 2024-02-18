@@ -4,6 +4,7 @@ import { useDescope, useSession, useUser } from '@descope/react-sdk'
 import { Descope } from '@descope/react-sdk'
 import { getSessionToken } from '@descope/react-sdk';
 import SecretMessage from '../components/SecretMessage';
+import SSOSignIn from '../components/SSOSignIn';
 
 
 const Home = () => {
@@ -25,6 +26,8 @@ const Home = () => {
       <h1>Welcome to your home page</h1>
       <button onClick={() => window.location.href = '/signin'}>Sign In</button>
       <SecretMessage/>
+      <SSOSignIn/>
+
     </div>
   </>;
 }
