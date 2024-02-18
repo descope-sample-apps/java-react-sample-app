@@ -70,7 +70,7 @@ You will need to configure a tenant in your Descope console with OIDC. Then, you
 authenticated user info. We'll include the steps to set up in the UI here, but this can also be done via API or SDK.
 
 1. Create a tenant [here](https://app.descope.com/tenants)
-2. Enable [SSO via OIDC](https://app.descope.com/tenant/authentication/sso/tenant-a) and configure an Identity Provider
+2. Then, click on the tenant, Authentication Methods, SSO and enable and configure SSO via OIDC with an Identity Provider
 
 Be sure to have `https://api.descope.com/v1/oauth/callback` in the allowed redirect URIs
 
