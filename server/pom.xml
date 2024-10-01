@@ -31,7 +31,7 @@
 		<dependency>
 			<artifactId>java-sdk</artifactId>
 			<groupId>com.descope</groupId>
-			<version>1.0.14</version>
+			<version>1.0.29</version>
 		</dependency>
 
 	</dependencies>
