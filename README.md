@@ -1,96 +1,139 @@
-# Java React Sample App
+# Java + React Sample App (Descope)
 
-This sample app showcases Descope authentication built using React for frontend and Java Spring for backend. The frontend incldues a home, login, and dashboard screen, with the dashboard including a call to the backend to get a "secret message" that is only shared when a valid session token is passed in.
+A minimal full-stack sample showing how to authenticate users with [Descope](https://descope.com), call a protected backend API with the resulting session token, and embed a self-service profile widget.
 
-Authentication and session validation are implemented using Descope's [React SDK](https://github.com/descope/react-sdk) and [Java SDK](https://github.com/descope/descope-java) in the frontend and backend respectively.
+- **Frontend:** React 18 with [`@descope/react-sdk`](https://github.com/descope/react-sdk) (Auth Provider, `<Descope>` flow runner, session hooks, `<UserProfile>` widget)
+- **Backend:** Spring Boot 3.5 with [`descope-java`](https://github.com/descope/descope-java) (session validation + automatic token refresh)
 
-## Setup & Running
+## What this sample demonstrates
 
-### Run server
+| Feature | Where |
+|---|---|
+| Hosted Descope flow rendered in React (`sign-up-or-in`) | `client/src/pages/SignIn.js` |
+| Auth-aware routing with `useSession` / `useUser` | `client/src/pages/Home.js`, `Dashboard.js` |
+| Tenant-scoped SSO via the same flow (no backend round trip) | `<Descope tenant={...}>` in `SignIn.js` |
+| `<UserProfile>` self-service widget (auth methods, devices, logout) | `client/src/pages/Dashboard.js` |
+| Calling a protected backend endpoint with the session JWT | `client/src/components/SecretMessage.js` |
+| Server-side session validation **with automatic refresh** | `JavaSampleAppApplication.getSecretMessage` |
+| Returning a rotated session JWT to the browser via response header | `X-Descope-Session-Jwt` header + CORS `exposedHeaders` |
 
-1. Navigate into the server folder:
+## Prerequisites
 
+| | |
+|---|---|
+| Java | 17+ (tested with JDK 26) |
+| Node | 18+ |
+| npm | bundled with Node |
+| Maven | bundled via `./mvnw` (no separate install) |
+| Descope project | create one at [app.descope.com](https://app.descope.com) |
+
+If `java` is not on your `PATH`, point `JAVA_HOME` at your JDK before running the server. Example for Homebrew on macOS:
+
+```bash
+export JAVA_HOME=$(/usr/libexec/java_home -v 17)
 ```
+
+## Descope console setup
+
+A new Descope project comes with sensible defaults, but the sample relies on a few things existing in your project:
+
+1. A flow named `sign-up-or-in` (created automatically in new projects).
+2. A widget named `user-profile-widget` for the dashboard's `<UserProfile>` embed (also created by default).
+3. **Optional — for tenant SSO demo:** a tenant configured with OIDC or SAML SSO ([app.descope.com/tenants](https://app.descope.com/tenants)) and an **SSO** step in the `sign-up-or-in` flow.
+
+## Setup
+
+### 1. Server
+
+```bash
 cd server
 ```
 
-2. In your `application.properties` file, add your Descope project ID:
+Set your project ID in `src/main/resources/application.properties`:
 
-```
+```properties
 descope.project.id=<YOUR_DESCOPE_PROJECT_ID>
 ```
 
-3. To run the application, run the following command in a terminal window (in the complete) directory:
+Run:
 
-```
-./gradlew bootRun
-```
-
-If you use Maven, run the following command in a terminal window (in the complete) directory:
-
-```
+```bash
 ./mvnw spring-boot:run
 ```
 
-### Run client
+The server listens on `http://localhost:8080`.
 
-1. Navigate into the client folder:
+### 2. Client
 
-```
+```bash
 cd client
+npm install
 ```
 
-2. Install dependencies
+Create a `.env` file in the `client/` directory:
 
-```
-npm i
-```
-
-3. Create a `.env` folder and add environment variables:
-
-```
-REACT_APP_DESCOPE_PROJECT_ID="YOUR_DESCOPE_PROJECT_ID"
+```env
+REACT_APP_DESCOPE_PROJECT_ID=<YOUR_DESCOPE_PROJECT_ID>
 ```
 
-4. Start the application
+Run:
 
-```
+```bash
 npm start
 ```
 
->Note: If you're not running the client at <http://localhost:3000> you may need to change the server's CrossOrigin domain to wherever you're hosting it (in JavaSampleAppApplication.java).
+The app opens at `http://localhost:3000`. If you host the client elsewhere, update the `@CrossOrigin` value in `JavaSampleAppApplication.java`.
+
+## How session validation + refresh works
+
+The client sends two headers when calling `/get_secret_message`:
+
+- `Authorization: Bearer <sessionToken>` — short-lived session JWT
+- `X-Refresh-Token: <refreshToken>` — long-lived refresh JWT (optional)
+
+The backend calls `AuthenticationService.validateAndRefreshSessionWithTokens(session, refresh)`. If the session JWT is expired but the refresh JWT is still valid, the SDK transparently mints a fresh session JWT. The new JWT is returned to the browser in the `X-Descope-Session-Jwt` response header.
+
+If the client omits the refresh header, the server falls back to plain `validateSessionWithToken`.
+
+The `@CrossOrigin(... exposedHeaders = {"X-Descope-Session-Jwt"})` annotation is required so the browser's JS can read the rotated token from the response.
+
+## Tenant SSO
+
+This sample no longer uses dedicated backend SSO endpoints. Tenant SSO is handled entirely inside the Descope flow:
+
+1. In your Descope project, configure a tenant ([app.descope.com/tenants](https://app.descope.com/tenants)) and enable SSO (SAML or OIDC) on it.
+2. Make sure your `sign-up-or-in` flow contains an **SSO** step (or use a dedicated flow that does).
+3. On the home page, enter the tenant ID and click **Sign in via Tenant SSO**. The browser navigates to `/signin?tenant=<id>`, and the `<Descope tenant={tenantId}>` component runs the SSO flow for that tenant.
+
+No backend code is needed for the SSO exchange — the React SDK handles redirect and token exchange end-to-end.
+
+## `<UserProfile>` widget
+
+The dashboard embeds `<UserProfile widgetId="user-profile-widget">`. The widget is rendered from your Descope project's widget configuration, so you can change layout, fields, and styling in the Descope console without touching this code.
+
+To enable it, make sure a widget named `user-profile-widget` exists in your project (the default works for most setups). See [Descope widgets docs](https://docs.descope.com/widgets/users).
+
+## Project structure
 
 ```
-@CrossOrigin(origins = "http://localhost:3000")
+server/
+  src/main/java/com/descope/java_sample_app/
+    JavaSampleAppApplication.java   # Spring Boot app + protected endpoint
+  src/main/resources/
+    application.properties          # Descope project ID
+
+client/
+  src/
+    index.js                        # AuthProvider + router
+    pages/
+      Home.js                       # Public landing + tenant SSO entry
+      SignIn.js                     # <Descope> flow runner
+      Dashboard.js                  # Protected page + UserProfile widget
+      Layout.js                     # Nav
+    components/
+      SecretMessage.js              # Authenticated fetch against backend
 ```
-
-## Tenant-based OIDC SSO Setup
-
-You will need to configure a tenant in your Descope console with OIDC. Then, you can use the associated tenant ID to start SSO, redirect to the IdP authentication portal, and then exchange the returned code for 
-authenticated user info. We'll include the steps to set up in the UI here, but this can also be done via API or SDK.
-
-1. Create a tenant [here](https://app.descope.com/tenants)
-2. Then, click on the tenant, Authentication Methods, SSO and enable and configure SSO via OIDC with an Identity Provider
-
-Be sure to have `https://api.descope.com/v1/oauth/callback` in the allowed redirect URIs
-
-![Screenshot 2024-02-17 at 10 42 35 AM](https://github.com/descope-sample-apps/java-react-sample-app/assets/46854522/76cf59da-5e8e-4067-b601-23445b05bf77)
-
-3. Run your application per `Setup & Running` as described above, with the client at http://localhost:3000 and server at http://localhost:8080.
-
-4. Navigate to the url where your client is running and input the tenant ID.
-
-![Screenshot 2024-02-17 at 10 38 23 AM](https://github.com/descope-sample-apps/java-react-sample-app/assets/46854522/a7647954-c166-447a-b848-0171364210a2)
-
-5. Log in via your IdP. Then, you'll be redirected back to the application where the SSO exchange will complete.
-
-![Screenshot 2024-02-17 at 10 46 38 AM](https://github.com/descope-sample-apps/java-react-sample-app/assets/46854522/0159a703-20a3-4a2e-b25c-120c043f66a2)
-
-You should see the signed in user's email, userId, session, and refresh token.
-![Screenshot 2024-02-18 at 10 22 19 AM](https://github.com/descope-sample-apps/java-react-sample-app/assets/46854522/3feb9585-d508-4d8b-ac13-e1cd54307c3f)
-
-
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT — see [LICENSE](LICENSE).
