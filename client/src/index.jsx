@@ -11,7 +11,7 @@ import SignIn from "./pages/SignIn";
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
     <React.StrictMode>
-        <AuthProvider projectId={process.env.REACT_APP_DESCOPE_PROJECT_ID}>
+        <AuthProvider projectId={import.meta.env.VITE_DESCOPE_PROJECT_ID}>
             <BrowserRouter>
                 <Routes>
                     <Route path="/" element={<Layout />}>
