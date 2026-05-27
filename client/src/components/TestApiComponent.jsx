@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { getSessionToken } from '@descope/react-sdk';
 
 const escapeHtml = (s) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -24,7 +25,7 @@ const highlightJson = (value) => {
 
 const FlowChip = ({ label, sub, accent }) => (
   <div
-    className={`flex-1 min-w-0 px-3 py-2 rounded-lg border bg-black/40 backdrop-blur-sm ${accent}`}
+    className={`flex-1 min-w-0 px-3 py-2 rounded-lg border bg-black/40 backdrop-blur-xs ${accent}`}
   >
     <p className="text-[10px] uppercase tracking-wider text-gray-400 truncate">{label}</p>
     <p className="text-xs font-mono text-gray-200 truncate">{sub}</p>
@@ -48,6 +49,10 @@ const TestApiComponent = () => {
   const [details, setDetails] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const [sessionStatus, setSessionStatus] = useState(null);
+  const [sessionDetails, setSessionDetails] = useState(null);
+  const [sessionLoading, setSessionLoading] = useState(false);
+
   const handleTest = async () => {
     setLoading(true);
     setStatus(null);
@@ -70,11 +75,43 @@ const TestApiComponent = () => {
     }
   };
 
+  const handleValidateSession = async () => {
+    setSessionLoading(true);
+    setSessionStatus(null);
+    setSessionDetails(null);
+    try {
+      const token = getSessionToken();
+      if (!token) {
+        setSessionStatus('failed: no session token available (sign in first)');
+        return;
+      }
+      const res = await fetch('http://localhost:8080/validate_session', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok && data.status === 'ok') {
+        setSessionStatus('success');
+        setSessionDetails(data);
+      } else {
+        setSessionStatus(`failed: ${data.message || res.status}`);
+        setSessionDetails(data);
+      }
+    } catch (err) {
+      console.error('Session validation error:', err);
+      setSessionStatus('failed');
+    } finally {
+      setSessionLoading(false);
+    }
+  };
+
   const isFailure = status && status.startsWith('failed');
   const isSuccess = status === 'success';
+  const isSessionFailure = sessionStatus && sessionStatus.startsWith('failed');
+  const isSessionSuccess = sessionStatus === 'success';
 
   return (
-    <div className="mb-8 p-6 bg-black/20 rounded-lg border border-[#5cf34f]/20 backdrop-blur-sm max-w-2xl mx-auto text-left">
+    <>
+    <div className="mb-8 p-6 bg-black/20 rounded-lg border border-[#5cf34f]/20 backdrop-blur-xs max-w-2xl mx-auto text-left">
       <div className="mb-4">
         <h3 className="text-base font-semibold text-white">
           Backend API call &mdash; Descope access key exchange
@@ -205,6 +242,120 @@ const TestApiComponent = () => {
         </motion.div>
       )}
     </div>
+
+    <div className="mb-8 p-6 bg-black/20 rounded-lg border border-[#3DEFE9]/20 backdrop-blur-xs max-w-2xl mx-auto text-left">
+      <div className="mb-4">
+        <h3 className="text-base font-semibold text-white">
+          Backend API call &mdash; user session validation
+        </h3>
+        <p className="text-xs text-gray-400 mt-1">
+          The browser sends its{' '}
+          <a
+            href="https://docs.descope.com/authorization/session-management"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#3DEFE9] underline hover:no-underline"
+          >
+            session JWT
+          </a>{' '}
+          as a Bearer token. The Java backend calls{' '}
+          <code className="text-[#3DEFE9]">validateSessionWithToken</code> and
+          verifies the <code className="text-[#3DEFE9]">aud</code> claim matches
+          this project.
+        </p>
+      </div>
+
+      <div className="flex items-center gap-2 mb-4">
+        <FlowChip
+          label="Browser"
+          sub="Authorization: Bearer ..."
+          accent="border-white/10"
+        />
+        <Arrow />
+        <FlowChip
+          label="Java backend"
+          sub="validateSessionWithToken(...)"
+          accent="border-[#3DEFE9]/40"
+        />
+        <Arrow />
+        <FlowChip
+          label="Descope"
+          sub="verifies JWT signature"
+          accent="border-[#5cf34f]/40"
+        />
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+        <code className="text-xs font-mono px-3 py-2 rounded-md bg-black/40 border border-white/10 text-gray-300 flex-1">
+          <span className="text-[#3DEFE9]">GET</span>{' '}
+          <span className="text-gray-100">http://localhost:8080/validate_session</span>
+        </code>
+        <motion.button
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={handleValidateSession}
+          disabled={sessionLoading}
+          className="px-5 py-2 bg-[#3DEFE9] text-black rounded-lg hover:bg-[#3DEFE9]/80 font-medium shadow-lg disabled:opacity-60 whitespace-nowrap"
+        >
+          {sessionLoading ? 'Validating...' : 'Validate Session'}
+        </motion.button>
+      </div>
+
+      {sessionStatus && (
+        <motion.p
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`text-sm mb-3 ${isSessionFailure ? 'text-red-400' : 'text-[#3DEFE9]'}`}
+        >
+          {isSessionSuccess ? '200 OK — session validated by backend' : sessionStatus}
+        </motion.p>
+      )}
+
+      {sessionDetails && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-lg overflow-hidden border border-white/10 bg-black/60"
+        >
+          <div className="flex items-center justify-between px-3 py-2 bg-white/5 border-b border-white/10">
+            <div className="flex gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#27c93f]" />
+            </div>
+            <span className="text-[10px] uppercase tracking-wider text-gray-400">
+              response &mdash; application/json
+            </span>
+          </div>
+          <pre className="text-xs leading-relaxed p-4 overflow-auto text-gray-300 font-mono text-left whitespace-pre">
+            <code dangerouslySetInnerHTML={{ __html: highlightJson(sessionDetails) }} />
+          </pre>
+          {isSessionSuccess && (
+            <div className="px-4 py-3 border-t border-white/10 bg-white/5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-gray-500">Project</p>
+                <p className="text-xs font-mono text-gray-200 break-all">
+                  {sessionDetails.projectId || '—'}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-gray-500">User</p>
+                <p className="text-xs font-mono text-gray-200 break-all">
+                  {sessionDetails.subjectId || '—'}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-gray-500">Token expires</p>
+                <p className="text-xs font-mono text-gray-200 break-all">
+                  {formatExpiration(sessionDetails.expiration)}
+                </p>
+              </div>
+            </div>
+          )}
+        </motion.div>
+      )}
+    </div>
+    </>
   );
 };
 
