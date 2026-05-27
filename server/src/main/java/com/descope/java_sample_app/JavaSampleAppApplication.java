@@ -44,7 +44,7 @@ public class JavaSampleAppApplication {
 	// when the env var is unset. Endpoints then return a config-missing error instead of
 	// crashing the app at startup — useful for a sample that may be cloned and run cold.
 	@Bean
-	@ConditionalOnExpression("'${descope.project.id:}' != ''")
+	@ConditionalOnExpression("'${descope.project.id:}'.trim() != ''")
 	public DescopeClient descopeClient(@Value("${descope.project.id}") String projectId) {
 		return new DescopeClient(Config.builder().projectId(projectId).build());
 	}
