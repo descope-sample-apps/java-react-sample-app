@@ -10,6 +10,8 @@ import jakarta.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -24,7 +26,9 @@ import org.springframework.web.bind.annotation.RestController;
 @CrossOrigin(origins = "http://localhost:3000")
 public class JavaSampleAppApplication {
 
-	@Value("${descope.project.id}")
+	private static final Logger log = LoggerFactory.getLogger(JavaSampleAppApplication.class);
+
+	@Value("${descope.project.id:}")
 	private String descopeProjectId;
 
 	@Value("${descope.access.key:}")
@@ -38,11 +42,21 @@ public class JavaSampleAppApplication {
 
 	@PostConstruct
 	public void init() {
+		if (descopeProjectId == null || descopeProjectId.isBlank()) {
+			log.warn("descope.project.id not set; DescopeClient disabled");
+			return;
+		}
 		descopeClient = new DescopeClient(Config.builder().projectId(descopeProjectId).build());
 	}
 
 	@GetMapping("/test_backend")
 	public ResponseEntity<?> testBackend() {
+		if (descopeClient == null) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(Map.of(
+							"status", "error",
+							"message", "DESCOPE_PROJECT_ID is not configured on the server"));
+		}
 		if (descopeAccessKey == null || descopeAccessKey.isBlank()) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(Map.of(
