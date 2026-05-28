@@ -35,7 +35,7 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-radial from-black via-black to-blue-950/20 opacity-70" />
+      <div className="absolute inset-0 bg-radial-[circle] from-black via-black to-blue-950/20 opacity-70" />
       <FloatingShapes />
 
       <motion.div
@@ -66,7 +66,7 @@ const Home = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => navigate('/signin')}
-            className="rounded-xl bg-gradient-to-r from-[#00A6B4] via-[#3DEFE9] to-[#5cf34f] px-8 py-3 text-base font-medium text-black shadow-lg border border-[#00A6B4] backdrop-blur-sm w-48 cursor-pointer"
+            className="rounded-xl bg-linear-to-r from-[#00A6B4] via-[#3DEFE9] to-[#5cf34f] px-8 py-3 text-base font-medium text-black shadow-lg border border-[#00A6B4] backdrop-blur-xs w-48 cursor-pointer"
           >
             Sign In
           </motion.button>
@@ -74,8 +74,8 @@ const Home = () => {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => window.open('https://github.com/descope-sample-apps/java-react-sample-app', '_blank')}
-            className="rounded-xl bg-black border border-[#5cf34f]/50 px-8 py-3 text-base font-medium text-white shadow-lg backdrop-blur-sm w-48 cursor-pointer"
+            onClick={() => window.open('https://github.com/descope-sample-apps/java-react-sample-app', '_blank', 'noopener,noreferrer')}
+            className="rounded-xl bg-black border border-[#5cf34f]/50 px-8 py-3 text-base font-medium text-white shadow-lg backdrop-blur-xs w-48 cursor-pointer"
           >
             View on GitHub
           </motion.button>
@@ -85,7 +85,7 @@ const Home = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="mt-12 p-6 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 max-w-md mx-auto"
+          className="mt-12 p-6 rounded-xl bg-white/5 backdrop-blur-xs border border-white/10 max-w-md mx-auto"
         >
           <h2 className="text-lg font-semibold mb-2 text-white">Tenant SSO Sign In</h2>
           <p className="text-sm text-gray-400 mb-4">
@@ -106,7 +106,7 @@ const Home = () => {
               value={tenantId}
               placeholder="Tenant ID"
               onChange={(e) => setTenantId(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-[#5cf34f]/60"
+              className="w-full px-4 py-2 rounded-lg bg-black/40 border border-white/10 text-white placeholder-gray-500 focus:outline-hidden focus:border-[#5cf34f]/60 focus:ring-1 focus:ring-[#5cf34f]/60"
             />
             <motion.button
               whileHover={{ scale: 1.03 }}

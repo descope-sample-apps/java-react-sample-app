@@ -6,7 +6,7 @@ const PoweredBy = ({ label = "Java + React Sample App" }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: 0.5 }}
-      className="mt-8 px-4 py-3 rounded-xl bg-white/5 backdrop-blur-sm border border-[#5cf34f]/50 inline-block"
+      className="mt-8 px-4 py-3 rounded-xl bg-white/5 backdrop-blur-xs border border-[#5cf34f]/50 inline-block"
     >
       <div className="flex items-center justify-center gap-2">
         <motion.div

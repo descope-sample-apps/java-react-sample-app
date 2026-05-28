@@ -9,6 +9,8 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -19,6 +21,8 @@ import org.springframework.web.servlet.HandlerInterceptor;
 public class DescopeAuthInterceptor implements HandlerInterceptor {
 
 	public static final String TOKEN_ATTR = "descopeToken";
+
+	private static final Logger log = LoggerFactory.getLogger(DescopeAuthInterceptor.class);
 
 	private final ObjectProvider<AuthenticationService> authServiceProvider;
 	private final String expectedProjectId;
@@ -43,12 +47,12 @@ public class DescopeAuthInterceptor implements HandlerInterceptor {
 		}
 
 		String authHeader = req.getHeader("Authorization");
-		if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+		if (authHeader == null || !authHeader.regionMatches(true, 0, "Bearer ", 0, 7)) {
 			return writeError(res, HttpServletResponse.SC_UNAUTHORIZED,
 					"Missing or malformed Authorization header (expected: Bearer <session-token>)");
 		}
 
-		String sessionToken = authHeader.substring("Bearer ".length()).trim();
+		String sessionToken = authHeader.substring(7).trim();
 		String refreshToken = req.getHeader("X-Refresh-Token");
 
 		try {
@@ -66,16 +70,38 @@ public class DescopeAuthInterceptor implements HandlerInterceptor {
 			req.setAttribute(TOKEN_ATTR, token);
 			return true;
 		} catch (DescopeException e) {
-			return writeError(res, HttpServletResponse.SC_UNAUTHORIZED,
-					"Session validation failed: " + e.getMessage());
+			log.debug("Session validation failed", e);
+			return writeError(res, HttpServletResponse.SC_UNAUTHORIZED, "Invalid session");
 		}
 	}
 
 	private boolean writeError(HttpServletResponse res, int status, String message) throws IOException {
 		res.setStatus(status);
 		res.setContentType("application/json");
-		String escaped = message.replace("\\", "\\\\").replace("\"", "\\\"");
-		res.getWriter().write("{\"status\":\"error\",\"message\":\"" + escaped + "\"}");
+		res.getWriter().write("{\"status\":\"error\",\"message\":\"" + escapeJson(message) + "\"}");
 		return false;
+	}
+
+	private static String escapeJson(String s) {
+		StringBuilder sb = new StringBuilder(s.length() + 16);
+		for (int i = 0; i < s.length(); i++) {
+			char c = s.charAt(i);
+			switch (c) {
+				case '"':  sb.append("\\\""); break;
+				case '\\': sb.append("\\\\"); break;
+				case '\b': sb.append("\\b"); break;
+				case '\f': sb.append("\\f"); break;
+				case '\n': sb.append("\\n"); break;
+				case '\r': sb.append("\\r"); break;
+				case '\t': sb.append("\\t"); break;
+				default:
+					if (c < 0x20) {
+						sb.append(String.format("\\u%04x", (int) c));
+					} else {
+						sb.append(c);
+					}
+			}
+		}
+		return sb.toString();
 	}
 }

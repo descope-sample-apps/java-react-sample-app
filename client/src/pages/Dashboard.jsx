@@ -97,7 +97,7 @@ const Dashboard = () => {
                 Widget docs &rarr;
               </a>
             </div>
-            <div className="rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 p-4">
+            <div className="rounded-xl bg-white/5 backdrop-blur-xs border border-white/10 p-4">
               <UserProfile widgetId="user-profile-widget" theme="light" />
             </div>
           </div>

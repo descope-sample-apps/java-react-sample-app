@@ -4,7 +4,7 @@ const FloatingShapes = () => {
   return (
     <div className="absolute inset-0 overflow-hidden">
       <motion.div
-        className="absolute w-[500px] h-[500px] rounded-full bg-gradient-to-r from-[#02dfed]/20 to-[#5cf34f]/20 blur-3xl"
+        className="absolute w-[500px] h-[500px] rounded-full bg-linear-to-r from-[#02dfed]/20 to-[#5cf34f]/20 blur-3xl"
         animate={{
           x: ["-20%", "5%", "-10%"],
           y: ["5%", "-20%", "10%"],

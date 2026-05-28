@@ -27,7 +27,7 @@ const SignIn = () => {
 
   return (
     <div className="min-h-screen w-screen bg-black text-white relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-radial from-black via-black to-blue-950/20 opacity-70" />
+      <div className="absolute inset-0 bg-radial-[circle] from-black via-black to-blue-950/20 opacity-70" />
       <FloatingShapes />
 
       <div className="relative pt-12 pb-6 md:pt-20 md:pb-6">
