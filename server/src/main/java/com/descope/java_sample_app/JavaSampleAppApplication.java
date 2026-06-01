@@ -1,125 +1,100 @@
 package com.descope.java_sample_app;
 
-import com.descope.client.*;
+import com.descope.client.Config;
+import com.descope.client.DescopeClient;
 import com.descope.exception.DescopeException;
-import com.descope.model.auth.AuthenticationInfo;
 import com.descope.model.jwt.Token;
-import com.descope.model.magiclink.LoginOptions;
-import com.descope.sdk.auth.*;
+import com.descope.sdk.auth.AuthenticationService;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @SpringBootApplication
 @RestController
-@CrossOrigin(origins = "http://localhost:3000")
 public class JavaSampleAppApplication {
 
+	private final String accessKey;
+	private final ObjectProvider<AuthenticationService> authServiceProvider;
 
-	@Value("${descope.project.id}")
-	private String descopeProjectId;
-
-	private DescopeClient descopeClient;
+	public JavaSampleAppApplication(@Value("${descope.access.key:}") String accessKey,
+			ObjectProvider<AuthenticationService> authServiceProvider) {
+		this.accessKey = accessKey;
+		this.authServiceProvider = authServiceProvider;
+	}
 
 	public static void main(String[] args) {
 		SpringApplication.run(JavaSampleAppApplication.class, args);
 	}
 
- 	@PostConstruct
-    public void init() {
-        descopeClient = new DescopeClient(Config.builder().projectId(descopeProjectId).build());
-    }
-
-	public void validateSession(String sessionToken) throws DescopeException {
-		AuthenticationService as = descopeClient.getAuthenticationServices().getAuthService();
-		Token t = as.validateSessionWithToken(sessionToken);
+	// SDK 1.1.0 throws ClientSetupException on an empty project ID, so the bean is skipped
+	// when the env var is unset. Endpoints then return a config-missing error instead of
+	// crashing the app at startup — useful for a sample that may be cloned and run cold.
+	@Bean
+	@ConditionalOnExpression("'${descope.project.id:}'.trim() != ''")
+	public DescopeClient descopeClient(@Value("${descope.project.id}") String projectId) {
+		return new DescopeClient(Config.builder().projectId(projectId).build());
 	}
 
-	@GetMapping("/get_secret_message")
-	public ResponseEntity<String> getSecretMessage(HttpServletRequest request) {
+	@Bean
+	@ConditionalOnBean(DescopeClient.class)
+	public AuthenticationService authenticationService(DescopeClient descopeClient) {
+		return descopeClient.getAuthenticationServices().getAuthService();
+	}
+
+	@GetMapping("/test_backend")
+	public ResponseEntity<?> testBackend() {
+		AuthenticationService authService = authServiceProvider.getIfAvailable();
+		if (authService == null) {
+			return errorBody(HttpStatus.INTERNAL_SERVER_ERROR, "DESCOPE_PROJECT_ID is not configured on the server");
+		}
+		if (accessKey == null || accessKey.isBlank()) {
+			return errorBody(HttpStatus.INTERNAL_SERVER_ERROR, "DESCOPE_ACCESS_KEY is not configured on the server");
+		}
 		try {
-			// Extract the Authorization header from the request
-			String authorizationHeader = request.getHeader("Authorization");
-
-			if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-				// Extract and validate the token
-				String sessionToken = authorizationHeader.substring(7); // Remove "Bearer " prefix
-
-				validateSession(sessionToken);
-
-				String secretMessage = "Hello! Here is your secret message.";
-				String jsonResponse = "{\"message\": \"" + secretMessage + "\"}";
-
-				return ResponseEntity.ok()
-						.contentType(org.springframework.http.MediaType.APPLICATION_JSON)
-						.body(jsonResponse);
-
-			} else {
-				// Handle the case where the Authorization header is missing or invalid
-				String errorMessage = "Invalid or missing session token";
-				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{\"message\": \"" + errorMessage + "\"}");
-			}
-
+			Token token = authService.exchangeAccessKey(accessKey);
+			return ResponseEntity.ok(tokenPayload(token, "Backend authenticated to Descope via access key"));
 		} catch (DescopeException e) {
-			// If session validation fails, return an unauthorized error response
-			return new ResponseEntity<>("Error getting authorization header", HttpStatus.UNAUTHORIZED);
+			return errorBody(HttpStatus.UNAUTHORIZED, "Access key exchange failed: " + e.getMessage());
 		}
 	}
 
-	@GetMapping("/start_sso")
-	public ResponseEntity<String> startSSOEndpoint(
-			@RequestParam("tenantId") String tenantId, 
-			@RequestParam(value = "redirectUrl", required = false) String redirectUrl, 
-			@RequestParam(value = "prompt", required = false) String prompt,
-			@RequestParam(value = "loginOptions", required = false) LoginOptions loginOptions) {
-		try {
-			String url = descopeClient.getAuthenticationServices().getSsoServiceProvider().start(tenantId, redirectUrl, prompt,
-			loginOptions);
-			String jsonResponse = "{\"url\": \"" + url + "\"}";
-
-			return ResponseEntity.ok()
-					.contentType(org.springframework.http.MediaType.APPLICATION_JSON)
-					.body(jsonResponse);
-		} catch (DescopeException e) {
-			return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-		}
+	@GetMapping("/validate_session")
+	public ResponseEntity<?> validateSession(HttpServletRequest req) {
+		Token token = (Token) req.getAttribute(DescopeAuthInterceptor.TOKEN_ATTR);
+		return ResponseEntity.ok(tokenPayload(token, "Session token validated"));
 	}
 
-	@PostMapping("/authorization-code/callback")
-	public ResponseEntity<?> handleAuthorizationCode(@RequestBody Map<String, String> payload) {
-		try {
-			String code = payload.get("code");
-			AuthenticationInfo authInfo = descopeClient.getAuthenticationServices().getSsoServiceProvider().exchangeToken(code);
-			String email = authInfo.getUser().getEmail();
-			String userId = authInfo.getUser().getUserId();
-			String token = authInfo.getToken().toString();
-			String refreshToken = authInfo.getRefreshToken().toString();
-			
-			Map<String, String> response = new HashMap<>();
-			response.put("email", email);
-			response.put("userId", userId);
-			response.put("token", token);
-			response.put("refreshToken", refreshToken);
-			System.out.println("Response: " + response.toString());
-			return ResponseEntity.ok(response);
-		} catch (DescopeException e) {
-			System.out.println("Error: " + e.getMessage());
-			return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-		}
+	@GetMapping("/validate_and_refresh_session")
+	public ResponseEntity<?> validateAndRefreshSession(HttpServletRequest req) {
+		Token token = (Token) req.getAttribute(DescopeAuthInterceptor.TOKEN_ATTR);
+		return ResponseEntity.ok(tokenPayload(token, "Session validated; refreshed if expired"));
+	}
+
+	private static ResponseEntity<?> errorBody(HttpStatus status, String message) {
+		return ResponseEntity.status(status).body(Map.of("status", "error", "message", message));
+	}
+
+	private static Map<String, Object> tokenPayload(Token token, String message) {
+		Map<String, Object> payload = new HashMap<>();
+		payload.put("status", "ok");
+		payload.put("message", message);
+		payload.put("projectId", token.getProjectId());
+		payload.put("subjectId", token.getId());
+		payload.put("expiration", token.getExpiration());
+		return payload;
 	}
 }
